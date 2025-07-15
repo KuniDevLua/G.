@@ -1,0 +1,206 @@
+-- Egg ESP + Pet Randomizer (Light UI Edition) by Kuni
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Settings
+local autoRandomize = false
+local espEnabled = true
+local randomizeDelay = 3
+local minimized = false
+local randomizeTime = 0
+
+local function getWeightedRandom(petList)
+	local expandedList = {}
+	for _, entry in ipairs(petList) do
+		local count = math.floor(entry.weight * 100)
+		for _ = 1, count do
+			table.insert(expandedList, entry.name)
+		end
+	end
+	if #expandedList == 0 then
+		return petList[math.random(1, #petList)].name
+	end
+	return expandedList[math.random(1, #expandedList)]
+end
+
+local petLootTable = {
+    ["Common Egg"] = {
+        {name = "Bunny", weight = 15},
+        {name = "Chick", weight = 15},
+        {name = "Mouse", weight = 15},
+        {name = "Squirrel", weight = 15},
+        {name = "Frog", weight = 10},
+        {name = "Duck", weight = 10},
+        {name = "Piglet", weight = 10},
+        {name = "Sheep", weight = 10},
+    },
+    ["Dinosaur Egg"] = {
+        {name = "Stegosaurus", weight = 10},
+        {name = "Triceratops", weight = 10},
+        {name = "Pterodactyl", weight = 10},
+        {name = "T-Rex", weight = 3},
+        {name = "Brontosaurus", weight = 10},
+        {name = "Raptor", weight = 10},
+    },
+    ["Paradise Egg"] = {
+        {name = "Ostrich", weight = 10},
+        {name = "Peacock", weight = 10},
+        {name = "Capybara", weight = 10},
+        {name = "Scarlet Macaw", weight = 10},
+        {name = "Mimic Octopus", weight = 3},
+    },
+    ["Bee Egg"] = {
+        {name = "Bee", weight = 10},
+        {name = "Honey Bee", weight = 10},
+        {name = "Bear Bee", weight = 10},
+        {name = "Petal Bee", weight = 10},
+        {name = "Queen Bee", weight = 5},
+    },
+    ["Anti Bee Egg"] = {
+        {name = "Wasp", weight = 10},
+        {name = "Tarantula Hawk", weight = 10},
+        {name = "Moth", weight = 10},
+        {name = "Butterfly", weight = 3},
+        {name = "Disco Bee", weight = 3},
+    },
+    ["Bug Egg"] = {
+        {name = "Caterpillar", weight = 10},
+        {name = "Snail", weight = 10},
+        {name = "Giant Ant", weight = 10},
+        {name = "Praying Mantis", weight = 10},
+        {name = "Dragonfly", weight = 3},
+    },
+    ["Oasis Egg"] = {
+        {name = "Meerkat", weight = 20},
+        {name = "Sand Snake", weight = 10},
+        {name = "Axolotl", weight = 10},
+        {name = "Hyacinth Macaw", weight = 10},
+        {name = "Fennec Fox", weight = 3},
+    },
+    ["Night Egg"] = {
+        {name = "Hedgehog", weight = 10},
+        {name = "Kiwi", weight = 10},
+        {name = "Mole", weight = 10},
+        {name = "Frog", weight = 10},
+        {name = "Echo Frog", weight = 10},
+        {name = "Night Owl", weight = 10},
+        {name = "Raccoon", weight = 3},
+    },
+    ["Primal Egg"] = {
+        {name = "Parasaurolophus", weight = 25},
+        {name = "Iguanodon", weight = 10.5},
+        {name = "Pachycephalosaurus", weight = 8},
+        {name = "Dilophosaurus", weight = 5},
+        {name = "Ankylosaurus", weight = 5},
+        {name = "Spinosaurus", weight = 3},
+    },
+    ["Mythical Egg"] = {
+        {name = "Grey Mouse", weight = 35.71},
+        {name = "Brown Mouse", weight = 26.79},
+        {name = "Squirrel", weight = 26.79},
+        {name = "Red Giant Ant", weight = 8.93},
+        {name = "Red Fox", weight = 1.79},
+    }
+}
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "EggESP_GUI"
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 240, 0, 240)
+MainFrame.Position = UDim2.new(0, 10, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, -40, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 10)
+Title.BackgroundTransparency = 1
+Title.Text = "Egg Randomizer by Kuni"
+Title.Font = Enum.Font.FredokaOne
+Title.TextSize = 20
+Title.TextColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local function createButton(name, text, position)
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.Size = UDim2.new(1, -40, 0, 30)
+	button.Position = position
+	button.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+	button.TextColor3 = Color3.fromRGB(30, 30, 30)
+	button.Font = Enum.Font.FredokaOne
+	button.TextSize = 14
+	button.Text = text
+	button.AutoButtonColor = false
+	button.Parent = MainFrame
+
+	local corner = Instance.new("UICorner", button)
+	corner.CornerRadius = UDim.new(0, 6)
+
+	button.MouseEnter:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	end)
+	button.MouseLeave:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+	end)
+
+	return button
+end
+
+local ESPToggle = createButton("ESPToggle", "ESP: ON", UDim2.new(0, 20, 0, 45))
+local AutoToggle = createButton("AutoToggle", "Auto Randomize: OFF", UDim2.new(0, 20, 0, 85))
+local RandomOnce = createButton("RandomOnce", "Randomize Once", UDim2.new(0, 20, 0, 125))
+
+local RandomizeLabel = Instance.new("TextLabel", MainFrame)
+RandomizeLabel.Name = "RandomizeLabel"
+RandomizeLabel.Size = UDim2.new(1, -40, 0, 25)
+RandomizeLabel.Position = UDim2.new(0, 20, 0, 165)
+RandomizeLabel.BackgroundTransparency = 1
+RandomizeLabel.Font = Enum.Font.FredokaOne
+RandomizeLabel.TextSize = 14
+RandomizeLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
+RandomizeLabel.Text = "Randomize in: OFF"
+RandomizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local Minimize = Instance.new("TextButton", MainFrame)
+Minimize.Name = "Minimize"
+Minimize.Size = UDim2.new(0, 20, 0, 20)
+Minimize.Position = UDim2.new(1, -50, 0, 10)
+Minimize.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+Minimize.Text = "-"
+Minimize.Font = Enum.Font.FredokaOne
+Minimize.TextSize = 14
+Minimize.TextColor3 = Color3.new(0, 0, 0)
+
+local MinimizeCorner = Instance.new("UICorner", Minimize)
+MinimizeCorner.CornerRadius = UDim.new(0, 4)
+
+local Close = Instance.new("TextButton", MainFrame)
+Close.Name = "Close"
+Close.Size = UDim2.new(0, 20, 0, 20)
+Close.Position = UDim2.new(1, -25, 0, 10)
+Close.BackgroundColor3 = Color3.fromRGB(240, 80, 80)
+Close.Text = "X"
+Close.Font = Enum.Font.FredokaOne
+Close.TextSize = 14
+Close.TextColor3 = Color3.new(1, 1, 1)
+
+local CloseCorner = Instance.new("UICorner", Close)
+CloseCorner.CornerRadius = UDim.new(0, 4)
+
+-- The rest of your logic (dragging, ESP, auto-randomizing, reopen button, etc.) stays the same from your existing working version.
+
+-- (I can continue with the rest if you want this version to also include the full drag/ESP logic again.)
