@@ -1,163 +1,293 @@
--- Egg Randomizer by Kuni (with 3s "Kuni Hub" loading screen)
-
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local ContextActionService = game:GetService("ContextActionService")
 local LocalPlayer = Players.LocalPlayer
 
+-- SETTINGS
+local autoRandomize = false
+local espEnabled = true
+local randomizeDelay = 3
+local minimized = false
+local randomizeTime = 0
+
 -- LOADING SCREEN
-local LoadingGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-LoadingGui.Name = "KuniLoading"
+local loadingGui = Instance.new("ScreenGui", game.CoreGui)
+loadingGui.Name = "KuniLoading"
 
-local LoadingFrame = Instance.new("Frame", LoadingGui)
-LoadingFrame.Size = UDim2.new(0, 300, 0, 100)
-LoadingFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+local loadingFrame = Instance.new("Frame", loadingGui)
+loadingFrame.Size = UDim2.new(0, 300, 0, 120)
+loadingFrame.Position = UDim2.new(0.5, -150, 0.5, -60)
+loadingFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+Instance.new("UICorner", loadingFrame).CornerRadius = UDim.new(0, 12)
 
-local LoadingCorner = Instance.new("UICorner", LoadingFrame)
-LoadingCorner.CornerRadius = UDim.new(0, 10)
+local titleLabel = Instance.new("TextLabel", loadingFrame)
+titleLabel.Size = UDim2.new(1, 0, 1, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.FredokaOne
+titleLabel.TextSize = 24
+titleLabel.TextColor3 = Color3.fromRGB(30, 30, 30)
+titleLabel.Text = "Kuni Hub\nLoading..."
+titleLabel.TextWrapped = true
 
-local LoadingText = Instance.new("TextLabel", LoadingFrame)
-LoadingText.Size = UDim2.new(1, 0, 1, 0)
-LoadingText.BackgroundTransparency = 1
-LoadingText.Text = "Kuni Hub"
-LoadingText.Font = Enum.Font.GothamBold
-LoadingText.TextSize = 20
-LoadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
+task.wait(3)
+loadingGui:Destroy()
 
--- Animate dots
-task.spawn(function()
-	while LoadingGui do
-		for i = 0, 3 do
-			if LoadingText then
-				LoadingText.Text = "Kuni Hub" .. string.rep(".", i)
+-- UI SETUP
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "EggESP_GUI"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 240, 0, 240)
+MainFrame.Position = UDim2.new(0, 10, 0.5, 0)
+MainFrame.AnchorPoint = Vector2.new(0, 0.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, -40, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 10)
+Title.BackgroundTransparency = 1
+Title.Text = "Egg Randomizer by Kuni"
+Title.Font = Enum.Font.FredokaOne
+Title.TextSize = 20
+Title.TextColor3 = Color3.fromRGB(20, 20, 20)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local function createButton(name, text, position)
+	local button = Instance.new("TextButton", MainFrame)
+	button.Name = name
+	button.Size = UDim2.new(1, -40, 0, 30)
+	button.Position = position
+	button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+	button.TextColor3 = Color3.fromRGB(0, 0, 0)
+	button.Font = Enum.Font.Gotham
+	button.TextSize = 14
+	button.Text = text
+	button.AutoButtonColor = false
+	Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
+
+	button.MouseEnter:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(210, 210, 210)
+	end)
+	button.MouseLeave:Connect(function()
+		button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+	end)
+
+	return button
+end
+
+local ESPToggle = createButton("ESPToggle", "ESP: ON", UDim2.new(0, 20, 0, 45))
+local AutoToggle = createButton("AutoToggle", "Auto Randomize: OFF", UDim2.new(0, 20, 0, 85))
+local RandomOnce = createButton("RandomOnce", "Randomize Once", UDim2.new(0, 20, 0, 125))
+
+local RandomizeLabel = Instance.new("TextLabel", MainFrame)
+RandomizeLabel.Name = "RandomizeLabel"
+RandomizeLabel.Size = UDim2.new(1, -40, 0, 25)
+RandomizeLabel.Position = UDim2.new(0, 20, 0, 165)
+RandomizeLabel.BackgroundTransparency = 1
+RandomizeLabel.Font = Enum.Font.Gotham
+RandomizeLabel.TextSize = 14
+RandomizeLabel.TextColor3 = Color3.fromRGB(80, 80, 80)
+RandomizeLabel.Text = "Randomize in: OFF"
+RandomizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local Minimize = Instance.new("TextButton", MainFrame)
+Minimize.Name = "Minimize"
+Minimize.Size = UDim2.new(0, 20, 0, 20)
+Minimize.Position = UDim2.new(1, -50, 0, 10)
+Minimize.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+Minimize.Text = "-"
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextSize = 14
+Minimize.TextColor3 = Color3.new(0, 0, 0)
+Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 4)
+
+local Close = Instance.new("TextButton", MainFrame)
+Close.Name = "Close"
+Close.Size = UDim2.new(0, 20, 0, 20)
+Close.Position = UDim2.new(1, -25, 0, 10)
+Close.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+Close.Text = "X"
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 14
+Close.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 4)
+
+-- DRAGGING
+local dragging, dragStart, startPos = false, nil, nil
+MainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+		ContextActionService:BindAction("DragUIBlock", function(_, s) if s == Enum.UserInputState.End then dragging = false ContextActionService:UnbindAction("DragUIBlock") end return Enum.ContextActionResult.Sink end, false, Enum.UserInputType.Touch)
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+		local delta = input.Position - dragStart
+		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+-- PET TABLE
+local function getWeightedRandom(petList)
+	local expandedList = {}
+	for _, entry in ipairs(petList) do
+		for _ = 1, math.floor(entry.weight * 100) do
+			table.insert(expandedList, entry.name)
+		end
+	end
+	return #expandedList == 0 and petList[math.random(1, #petList)].name or expandedList[math.random(1, #expandedList)]
+end
+
+local petLootTable = {
+	["Common Egg"] = {
+		{name = "Dog", weight = 33},
+		{name = "Cat", weight = 33},
+		{name = "Bunny", weight = 34},
+	},
+	["Dinosaur Egg"] = {
+		{name = "Stegosaurus", weight = 10},
+		{name = "Triceratops", weight = 10},
+		{name = "Pterodactyl", weight = 10},
+		{name = "T-Rex", weight = 3},
+		{name = "Brontosaurus", weight = 10},
+		{name = "Raptor", weight = 10},
+	},
+	["Paradise Egg"] = {
+		{name = "Ostrich", weight = 10},
+		{name = "Peacock", weight = 10},
+		{name = "Capybara", weight = 10},
+		{name = "Scarlet Macaw", weight = 10},
+		{name = "Mimic Octopus", weight = 3},
+	},
+	["Bee Egg"] = {
+		{name = "Bee", weight = 10},
+		{name = "Honey Bee", weight = 10},
+		{name = "Bear Bee", weight = 10},
+		{name = "Petal Bee", weight = 10},
+		{name = "Queen Bee", weight = 5},
+	}
+}
+
+-- ESP LOGIC
+local eggESP = {}
+local function removeAllESP()
+	for egg, gui in pairs(eggESP) do if gui then gui:Destroy() end end
+	eggESP = {}
+end
+local function createOrUpdateESP(egg)
+	if not espEnabled then return end
+	local tag = petLootTable[egg.Name]
+	if not tag or eggESP[egg] then return end
+	local billboard = Instance.new("BillboardGui")
+	billboard.Adornee = egg
+	billboard.Size = UDim2.new(0, 100, 0, 40)
+	billboard.StudsOffset = Vector3.new(0, 2, 0)
+	billboard.AlwaysOnTop = true
+	local label = Instance.new("TextLabel", billboard)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.fromRGB(0, 0, 0)
+	label.TextStrokeTransparency = 0
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.Text = getWeightedRandom(tag)
+	billboard.Parent = egg
+	eggESP[egg] = billboard
+end
+
+for _, egg in ipairs(Workspace:GetDescendants()) do
+	if egg:IsA("Model") and petLootTable[egg.Name] then createOrUpdateESP(egg) end
+end
+Workspace.DescendantAdded:Connect(function(desc)
+	if desc:IsA("Model") and petLootTable[desc.Name] then createOrUpdateESP(desc) end
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+	if autoRandomize then
+		randomizeTime += dt
+		local countdown = math.max(0, math.floor(randomizeDelay - randomizeTime))
+		RandomizeLabel.Text = "Randomize in: " .. countdown
+		if randomizeTime >= randomizeDelay then
+			for egg, gui in pairs(eggESP) do
+				local tag = petLootTable[egg.Name]
+				local label = gui:FindFirstChildWhichIsA("TextLabel")
+				if label and tag then label.Text = getWeightedRandom(tag) end
 			end
-			task.wait(0.4)
+			randomizeTime = 0
+		end
+	else
+		RandomizeLabel.Text = "Randomize in: OFF"
+		randomizeTime = 0
+	end
+	for egg, gui in pairs(eggESP) do
+		if not egg or not egg:IsDescendantOf(Workspace) then
+			if gui then gui:Destroy() end
+			eggESP[egg] = nil
 		end
 	end
 end)
 
--- FREEZE & then REMOVE LOADING
-task.delay(3, function()
-	if LoadingGui then
-		LoadingGui:Destroy()
-	end
-
-	-- BEGIN: Egg Randomizer GUI
-	local autoRandomize = false
-	local espEnabled = true
-	local randomizeDelay = 3
-	local minimized = false
-	local randomizeTime = 0
-
-	local function getWeightedRandom(petList)
-		local expandedList = {}
-		for _, entry in ipairs(petList) do
-			local count = math.floor(entry.weight * 100)
-			for _ = 1, count do
-				table.insert(expandedList, entry.name)
-			end
+-- BUTTONS
+ESPToggle.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	ESPToggle.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+	ESPToggle.BackgroundColor3 = espEnabled and Color3.fromRGB(140, 255, 140) or Color3.fromRGB(255, 140, 140)
+	if espEnabled then
+		for _, egg in ipairs(Workspace:GetDescendants()) do
+			if egg:IsA("Model") and petLootTable[egg.Name] then createOrUpdateESP(egg) end
 		end
-		if #expandedList == 0 then
-			return petList[math.random(1, #petList)].name
-		end
-		return expandedList[math.random(1, #expandedList)]
+	else
+		removeAllESP()
 	end
+end)
 
-	local petLootTable = {
-		["Dinosaur Egg"] = { {name="Stegosaurus",weight=10}, {name="Triceratops",weight=10}, {name="Pterodactyl",weight=10}, {name="T-Rex",weight=3}, {name="Brontosaurus",weight=10}, {name="Raptor",weight=10} },
-		["Paradise Egg"] = { {name="Ostrich",weight=10}, {name="Peacock",weight=10}, {name="Capybara",weight=10}, {name="Scarlet Macaw",weight=10}, {name="Mimic Octopus",weight=3} },
-		["Bee Egg"]      = { {name="Bee",weight=10}, {name="Honey Bee",weight=10}, {name="Bear Bee",weight=10}, {name="Petal Bee",weight=10}, {name="Queen Bee",weight=5} },
-		["Anti Bee Egg"] = { {name="Wasp",weight=10}, {name="Tarantula Hawk",weight=10}, {name="Moth",weight=10}, {name="Butterfly",weight=3}, {name="Disco Bee",weight=3} },
-		["Bug Egg"]      = { {name="Caterpillar",weight=10}, {name="Snail",weight=10}, {name="Giant Ant",weight=10}, {name="Praying Mantis",weight=10}, {name="Dragonfly",weight=3} },
-		["Oasis Egg"]    = { {name="Meerkat",weight=20}, {name="Sand Snake",weight=10}, {name="Axolotl",weight=10}, {name="Hyacinth Macaw",weight=10}, {name="Fennec Fox",weight=3} },
-		["Night Egg"]    = { {name="Hedgehog",weight=10}, {name="Kiwi",weight=10}, {name="Mole",weight=10}, {name="Frog",weight=10}, {name="Echo Frog",weight=10}, {name="Night Owl",weight=10}, {name="Raccoon",weight=3} },
-		["Primal Egg"]   = { {name="Parasaurolophus",weight=25}, {name="Iguanodon",weight=10.5}, {name="Pachycephalosaurus",weight=8}, {name="Dilophosaurus",weight=5}, {name="Ankylosaurus",weight=5}, {name="Spinosaurus",weight=3} },
-		["Mythical Egg"] = { {name="Grey Mouse",weight=35.71}, {name="Brown Mouse",weight=26.79}, {name="Squirrel",weight=26.79}, {name="Red Giant Ant",weight=8.93}, {name="Red Fox",weight=1.79} },
-	}
+AutoToggle.MouseButton1Click:Connect(function()
+	autoRandomize = not autoRandomize
+	AutoToggle.Text = "Auto Randomize: " .. (autoRandomize and "ON" or "OFF")
+	AutoToggle.BackgroundColor3 = autoRandomize and Color3.fromRGB(130, 190, 255) or Color3.fromRGB(230, 230, 230)
+end)
 
-	local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-	ScreenGui.Name = "EggRandomizerKuni"
-
-	local MainFrame = Instance.new("Frame", ScreenGui)
-	MainFrame.Size = UDim2.new(0, 240, 0, 240)
-	MainFrame.Position = UDim2.new(0, 10, 0.5, 0)
-	MainFrame.AnchorPoint = Vector2.new(0, 0.5)
-	MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
-
-	local Title = Instance.new("TextLabel", MainFrame)
-	Title.Size = UDim2.new(1, -40, 0, 30)
-	Title.Position = UDim2.new(0, 10, 0, 10)
-	Title.BackgroundTransparency = 1
-	Title.Text = "Egg Randomizer by Kuni"
-	Title.Font = Enum.Font.GothamBold
-	Title.TextSize = 20
-	Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-
-	local function createButton(name, text, position)
-		local button = Instance.new("TextButton")
-		button.Name = name
-		button.Size = UDim2.new(1, -40, 0, 30)
-		button.Position = position
-		button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
-		button.Font = Enum.Font.Gotham
-		button.TextSize = 14
-		button.Text = text
-		button.AutoButtonColor = false
-		button.Parent = MainFrame
-
-		Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
-		local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		button.MouseEnter:Connect(function()
-			TweenService:Create(button, tweenInfo, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-		end)
-		button.MouseLeave:Connect(function()
-			TweenService:Create(button, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)}):Play()
-		end)
-		return button
+RandomOnce.MouseButton1Click:Connect(function()
+	for egg, gui in pairs(eggESP) do
+		local tag = petLootTable[egg.Name]
+		local label = gui:FindFirstChildWhichIsA("TextLabel")
+		if label and tag then label.Text = getWeightedRandom(tag) end
 	end
+end)
 
-	local ESPToggle = createButton("ESPToggle", "ESP: ON", UDim2.new(0,20,0,45))
-	local AutoToggle = createButton("AutoToggle", "Auto Randomize: OFF", UDim2.new(0,20,0,85))
-	local RandomOnce = createButton("RandomOnce", "Randomize Once", UDim2.new(0,20,0,125))
+Minimize.MouseButton1Click:Connect(function()
+	minimized = true
+	MainFrame.Visible = false
+	ReopenButton.Position = MainFrame.Position
+	ReopenButton.Visible = true
+end)
 
-	local RandomizeLabel = Instance.new("TextLabel", MainFrame)
-	RandomizeLabel.Size = UDim2.new(1, -40, 0, 25)
-	RandomizeLabel.Position = UDim2.new(0, 20, 0, 165)
-	RandomizeLabel.BackgroundTransparency = 1
-	RandomizeLabel.Font = Enum.Font.Gotham
-	RandomizeLabel.TextSize = 14
-	RandomizeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-	RandomizeLabel.Text = "Randomize in: OFF"
-	RandomizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+local ReopenButton = Instance.new("TextButton", ScreenGui)
+ReopenButton.Name = "ReopenButton"
+ReopenButton.Size = UDim2.new(0, 60, 0, 60)
+ReopenButton.Position = UDim2.new(0.5, -30, 0.5, -30)
+ReopenButton.BackgroundColor3 = Color3.fromRGB(250, 250, 250)
+ReopenButton.Text = "EGG"
+ReopenButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+ReopenButton.Font = Enum.Font.GothamBold
+ReopenButton.TextSize = 20
+ReopenButton.Visible = false
+Instance.new("UICorner", ReopenButton).CornerRadius = UDim.new(0, 10)
 
-	local Minimize = Instance.new("TextButton", MainFrame)
-	Minimize.Size = UDim2.new(0,20,0,20)
-	Minimize.Position = UDim2.new(1,-50,0,10)
-	Minimize.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-	Minimize.Text = "-"
-	Minimize.Font = Enum.Font.GothamBold
-	Minimize.TextSize = 14
-	Minimize.TextColor3 = Color3.fromRGB(255,255,255)
-	Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0,4)
+ReopenButton.MouseButton1Click:Connect(function()
+	minimized = false
+	MainFrame.Position = ReopenButton.Position
+	MainFrame.Visible = true
+	ReopenButton.Visible = false
+end)
 
-	local Close = Instance.new("TextButton", MainFrame)
-	Close.Size = UDim2.new(0,20,0,20)
-	Close.Position = UDim2.new(1,-25,0,10)
-	Close.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-	Close.Text = "X"
-	Close.Font = Enum.Font.GothamBold
-	Close.TextSize = 14
-	Close.TextColor3 = Color3.fromRGB(255,255,255)
-	Instance.new("UICorner", Close).CornerRadius = UDim.new(0,4)
-
-	-- Dragging, ESP logic, auto-randomizer loop and full functionality goes here, untouched --
-	print("Complete script—just add the rest of your logic below the UI setup.")
+Close.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
 end)
