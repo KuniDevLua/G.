@@ -1,0 +1,143 @@
+-- Egg Randomizer by Kuni (Full Version - Runnable on KRNL, Delta, and other Executors)
+
+-- Services
+local players = game:GetService("Players")
+local collectionService = game:GetService("CollectionService")
+local TweenService = game:GetService("TweenService")
+local localPlayer = players.LocalPlayer or players:GetPlayers()[1]
+
+-- GUI Colors and Settings
+local BROWN_BG = Color3.fromRGB(118, 61, 25)
+local ACCENT_GREEN = Color3.fromRGB(110, 196, 99)
+local FONT = Enum.Font.FredokaOne
+
+-- Eggs and Chances (Includes Dinosaur & Primal)
+local eggChances = {
+    ["Common Egg"] = { Dog=33, Bunny=33, ["Golden Lab"]=33 },
+    ["Uncommon Egg"] = { ["Black Bunny"]=25, Chicken=25, Cat=25, Deer=25 },
+    ["Rare Egg"] = { ["Orange Tabby"]=33.33, ["Spotted Deer"]=25, Pig=16.67, Rooster=16.67, Monkey=8.33 },
+    ["Legendary Egg"] = { Cow=42.55, ["Silver Monkey"]=42.55, ["Sea Otter"]=10.64, Turtle=2.13, ["Polar Bear"]=2.13 },
+    ["Mythic Egg"] = { ["Grey Mouse"]=37.5, ["Brown Mouse"]=26.79, Squirrel=26.79, ["Red Giant Ant"]=8.93, ["Red Fox"]=0 },
+    ["Bug Egg"] = { Snail=40, ["Giant Ant"]=35, Caterpillar=25 },
+    ["Night Egg"] = { Hedgehog=47, Mole=23.5, Frog=21.16, ["Echo Frog"]=8.35 },
+    ["Bee Egg"] = { Bee=65, ["Honey Bee"]=20, ["Bear Bee"]=10, ["Petal Bee"]=5 },
+    ["Anti Bee Egg"] = { Wasp=55, ["Tarantula Hawk"]=31, Moth=14 },
+    ["Common Summer Egg"] = { Starfish=50, Seagull=25, Crab=25 },
+    ["Rare Summer Egg"] = { Flamingo=30, Toucan=25, ["Sea Turtle"]=20, Orangutan=15, Seal=10 },
+    ["Paradise Egg"] = { Ostrich=40, Peacock=30, Capybara=21, ["Scarlet Macaw"]=8, ["Mimic Octopus"]=1 },
+    ["Premium Night Egg"] = { Hedgehog=49, Mole=22, Frog=14, ["Echo Frog"]=10, ["Night Owl"]=4, Raccoon=1 },
+    ["Dinosaur Egg"] = { ["T_Rex"]=20, Brontosaurus=20, Triceratops=20, Velociraptor=20, Stegosaurus=20 },
+    ["Primal Egg"] = { Parasaurolophus=16.7, Iguanodon=16.7, Pachycephalosaurus=16.7, Dilophosaurus=16.7, Ankylosaurus=16.7, Spinosaurus=16.7 },
+}
+
+-- Randomizer Function
+local function weightedRandom(t)
+    local totalWeight = 0
+    for _, weight in pairs(t) do
+        totalWeight += weight
+    end
+    local rand = math.random() * totalWeight
+    for pet, weight in pairs(t) do
+        rand -= weight
+        if rand <= 0 then
+            return pet
+        end
+    end
+end
+
+-- Loading Screen
+local function showLoadingScreen()
+    local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+    gui.IgnoreGuiInset = true
+    gui.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0.4, 0, 0.15, 0)
+    frame.Position = UDim2.new(0.3, 0, 0.425, 0)
+    frame.BackgroundColor3 = BROWN_BG
+
+    local label = Instance.new("TextLabel", frame)
+    label.Size = UDim2.new(1, 0, 0.5, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Kuni Hub"
+    label.Font = FONT
+    label.TextColor3 = Color3.new(1,1,1)
+    label.TextScaled = true
+
+    local progress = Instance.new("Frame", frame)
+    progress.BackgroundColor3 = ACCENT_GREEN
+    progress.Position = UDim2.new(0, 0, 0.6, 0)
+    progress.Size = UDim2.new(0, 0, 0.25, 0)
+
+    TweenService:Create(progress, TweenInfo.new(4), {Size = UDim2.new(1, 0, 0.25, 0)}):Play()
+    task.wait(4)
+    gui:Destroy()
+end
+
+-- Create Main GUI
+local function createMainGUI()
+    local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+    gui.Name = "RandomizerGUI"
+    gui.ResetOnSpawn = false
+
+    local main = Instance.new("Frame", gui)
+    main.Size = UDim2.new(0, 260, 0, 140)
+    main.Position = UDim2.new(0.5, -130, 0.5, -70)
+    main.BackgroundColor3 = BROWN_BG
+    main.Active = true
+    main.Draggable = true
+
+    local title = Instance.new("TextLabel", main)
+    title.Size = UDim2.new(1, 0, 0.2, 0)
+    title.Text = "🥚 Egg Randomizer by Kuni"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextScaled = true
+    title.BackgroundTransparency = 1
+    title.Font = FONT
+
+    local eggBox = Instance.new("TextBox", main)
+    eggBox.PlaceholderText = "Enter Egg Name..."
+    eggBox.Size = UDim2.new(1, -20, 0, 30)
+    eggBox.Position = UDim2.new(0, 10, 0.25, 0)
+    eggBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    eggBox.TextColor3 = Color3.new(0, 0, 0)
+    eggBox.Font = FONT
+    eggBox.TextScaled = true
+
+    local reroll = Instance.new("TextButton", main)
+    reroll.Text = "Randomize"
+    reroll.Size = UDim2.new(1, -20, 0, 30)
+    reroll.Position = UDim2.new(0, 10, 0.55, 0)
+    reroll.BackgroundColor3 = ACCENT_GREEN
+    reroll.TextColor3 = Color3.new(1, 1, 1)
+    reroll.Font = FONT
+    reroll.TextScaled = true
+
+    local result = Instance.new("TextLabel", main)
+    result.Size = UDim2.new(1, -20, 0, 30)
+    result.Position = UDim2.new(0, 10, 0.8, 0)
+    result.BackgroundTransparency = 1
+    result.TextColor3 = Color3.new(1, 1, 1)
+    result.Font = FONT
+    result.TextScaled = true
+    result.Text = "Pet: ?"
+
+    local footer = Instance.new("TextLabel", main)
+    footer.Size = UDim2.new(1, 0, 0, 16)
+    footer.Position = UDim2.new(0, 0, 1, -16)
+    footer.BackgroundTransparency = 1
+    footer.Text = "Made By Kuni"
+    footer.Font = FONT
+    footer.TextColor3 = Color3.new(1, 1, 1)
+    footer.TextScaled = true
+
+    reroll.MouseButton1Click:Connect(function()
+        local eggType = eggBox.Text
+        if eggChances[eggType] then
+            local pet = weightedRandom(eggChances[eggType])
+            result.Text = "Pet: " .. pet
+        else
+            result.Text = "Invalid egg name."
+        end
+    end)
+end
