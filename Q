@@ -1,0 +1,131 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
+
+-- UI COLORS & STYLE
+local BROWN_BG = Color3.fromRGB(118, 61, 25)
+local BROWN_LIGHT = Color3.fromRGB(164, 97, 43)
+local BROWN_BORDER = Color3.fromRGB(51, 25, 0)
+local ACCENT_GREEN = Color3.fromRGB(110, 196, 99)
+local BUTTON_RED = Color3.fromRGB(255, 62, 62)
+local BUTTON_RED_HOVER = Color3.fromRGB(255, 100, 100)
+local BUTTON_GREEN = Color3.fromRGB(85, 200, 85)
+local BUTTON_GREEN_HOVER = Color3.fromRGB(120, 230, 120)
+local BUTTON_BLUE = Color3.fromRGB(66, 150, 255)
+local BUTTON_BLUE_HOVER = Color3.fromRGB(85, 180, 255)
+local FONT = Enum.Font.FredokaOne
+local TILE_IMAGE = "rbxassetid://15910695828"
+
+-- PET CHANCES
+local eggChances = {
+    ["Common Egg"] = { Dog = 33, Bunny = 33, ["Golden Lab"] = 33 },
+    ["Uncommon Egg"] = { ["Black Bunny"] = 25, Chicken = 25, Cat = 25, Deer = 25 },
+    ["Rare Egg"] = { ["Orange Tabby"] = 33.33, ["Spotted Deer"] = 25, Pig = 16.67, Rooster = 16.67, Monkey = 8.33 },
+    ["Legendary Egg"] = { Cow = 42.55, ["Silver Monkey"] = 42.55, ["Sea Otter"] = 10.64, Turtle = 2.13, ["Polar Bear"] = 2.13 },
+    ["Mythic Egg"] = { ["Grey Mouse"] = 37.5, ["Brown Mouse"] = 26.79, Squirrel = 26.79, ["Red Giant Ant"] = 8.93, ["Red Fox"] = 0.01 },
+    ["Bug Egg"] = { Snail = 40, ["Giant Ant"] = 35, Caterpillar = 25, ["Praying Mantis"] = 0, ["Dragon Fly"] = 0.01 },
+    ["Night Egg"] = { Hedgehog = 47, Mole = 23.5, Frog = 21.16, ["Echo Frog"] = 8.35, ["Night Owl"] = 0.01, Raccoon = 0.01 },
+    ["Bee Egg"] = { Bee = 65, ["Honey Bee"] = 20, ["Bear Bee"] = 10, ["Petal Bee"] = 5, ["Queen Bee"] = 0.01 },
+    ["Anti Bee Egg"] = { Wasp = 55, ["Tarantula Hawk"] = 31, Moth = 14, Butterfly = 0, ["Disco Bee"] = 0.01 },
+    ["Common Summer Egg"] = { Starfish = 50, Seafull = 25, Crab = 25 },
+    ["Rare Summer Egg"] = { Flamingo = 30, Toucan = 25, ["Sea Turtle"] = 20, Orangutan = 15, Seal = 10 },
+    ["Paradise Egg"] = { Ostrich = 43, Peacock = 33, Capybara = 24, ["Scarlet Macaw"] = 3, ["Mimic Octopus"] = 1 },
+    ["Premium Night Egg"] = { Hedgehog = 50, Mole = 26, Frog = 14, ["Echo Frog"] = 10 },
+    ["Primal Egg"] = { Parasaurolophus = 35, Iguanodon = 32.5, Pachycephalosaurus = 28, Dilophosaurus = 3, Ankylosaurus = 1, Spinosaurus = 0.5 },
+    ["Dinosaur Egg"] = { ["T-Rex"] = 0.01, Brontosaurus = 45, Triceratops = 25, Velociraptor = 30 },
+}
+
+local function isDivinePet(eggName, petName)
+    local chances = eggChances[eggName]
+    return chances and chances[petName] and chances[petName] <= 0.01
+end
+
+-- GUI SETUP
+local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+gui.Name = "KuniEggGui"
+gui.ResetOnSpawn = false
+
+-- LOADING SCREEN
+local loading = Instance.new("TextLabel", gui)
+loading.Size = UDim2.new(1, 0, 1, 0)
+loading.BackgroundColor3 = Color3.new(0, 0, 0)
+loading.Text = "Kuni Hub"
+loading.TextColor3 = Color3.new(1, 1, 1)
+loading.Font = FONT
+loading.TextScaled = true
+loading.BackgroundTransparency = 0
+
+wait(4)
+loading:Destroy()
+
+-- ESP STORAGE
+local displayedEggs = {}
+
+local function weightedRandom(tbl)
+    local total = 0
+    for _, chance in pairs(tbl) do
+        total += chance
+    end
+    local rand = math.random() * total
+    local cumulative = 0
+    for pet, chance in pairs(tbl) do
+        cumulative += chance
+        if rand <= cumulative then
+            return pet
+        end
+    end
+end
+
+local function createESP(egg, petName, eggName)
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "EggESP"
+    gui.Adornee = egg:FindFirstChildWhichIsA("BasePart") or egg.PrimaryPart or egg
+    gui.Size = UDim2.new(0, 200, 0, 50)
+    gui.StudsOffset = Vector3.new(0, 2.5, 0)
+    gui.AlwaysOnTop = true
+
+    local label = Instance.new("TextLabel", gui)
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = eggName .. " | ???"
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0
+    label.Font = Enum.Font.SourceSansBold
+    label.TextScaled = true
+
+    gui.Parent = egg
+
+    task.delay(39, function()
+        local divine = isDivinePet(eggName, petName)
+        label.Text = eggName .. " | " .. petName
+        if divine then
+            label.TextColor3 = Color3.fromRGB(0, 255, 0)
+            while label and label.Parent do
+                TweenService:Create(label, TweenInfo.new(0.5), { TextTransparency = 1 }):Play()
+                wait(0.5)
+                TweenService:Create(label, TweenInfo.new(0.5), { TextTransparency = 0 }):Play()
+                wait(0.5)
+            end
+        end
+    end)
+end
+
+local function onEggAdded(egg)
+    if egg:GetAttribute("OWNER") ~= localPlayer.Name then return end
+    local eggName = egg:GetAttribute("EggName")
+    local id = egg:GetAttribute("OBJECT_UUID")
+    if not eggName or not id or displayedEggs[id] then return end
+
+    local pet = weightedRandom(eggChances[eggName] or {})
+    createESP(egg, pet, eggName)
+    displayedEggs[id] = true
+end
+
+for _, egg in ipairs(CollectionService:GetTagged("PetEggServer")) do
+    onEggAdded(egg)
+end
+CollectionService:GetInstanceAddedSignal("PetEggServer"):Connect(onEggAdded)
