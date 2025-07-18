@@ -1,131 +1,327 @@
--- SERVICES
-local Players = game:GetService("Players")
-local CollectionService = game:GetService("CollectionService")
+-- Services
+local players = game:GetService("Players")
+local collectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local localPlayer = players.LocalPlayer or players:GetPlayers()[1]
 
-local localPlayer = Players.LocalPlayer or Players:GetPlayers()[1]
-
--- UI COLORS & STYLE
+-- GUI Colors & Theme
 local BROWN_BG = Color3.fromRGB(118, 61, 25)
 local BROWN_LIGHT = Color3.fromRGB(164, 97, 43)
 local BROWN_BORDER = Color3.fromRGB(51, 25, 0)
 local ACCENT_GREEN = Color3.fromRGB(110, 196, 99)
-local BUTTON_RED = Color3.fromRGB(255, 62, 62)
-local BUTTON_RED_HOVER = Color3.fromRGB(255, 100, 100)
-local BUTTON_GREEN = Color3.fromRGB(85, 200, 85)
-local BUTTON_GREEN_HOVER = Color3.fromRGB(120, 230, 120)
+local BUTTON_GRAY = Color3.fromRGB(190, 190, 190)
 local BUTTON_BLUE = Color3.fromRGB(66, 150, 255)
 local BUTTON_BLUE_HOVER = Color3.fromRGB(85, 180, 255)
+local BUTTON_GREEN = Color3.fromRGB(85, 200, 85)
+local BUTTON_GREEN_HOVER = Color3.fromRGB(120, 230, 120)
+local BUTTON_RED = Color3.fromRGB(255, 62, 62)
+local BUTTON_RED_HOVER = Color3.fromRGB(255, 100, 100)
 local FONT = Enum.Font.FredokaOne
 local TILE_IMAGE = "rbxassetid://15910695828"
 
--- PET CHANCES
+-- Egg Chances Table (Includes T-Rex as Divine with 0.01%)
 local eggChances = {
-    ["Common Egg"] = { Dog = 33, Bunny = 33, ["Golden Lab"] = 33 },
-    ["Uncommon Egg"] = { ["Black Bunny"] = 25, Chicken = 25, Cat = 25, Deer = 25 },
-    ["Rare Egg"] = { ["Orange Tabby"] = 33.33, ["Spotted Deer"] = 25, Pig = 16.67, Rooster = 16.67, Monkey = 8.33 },
-    ["Legendary Egg"] = { Cow = 42.55, ["Silver Monkey"] = 42.55, ["Sea Otter"] = 10.64, Turtle = 2.13, ["Polar Bear"] = 2.13 },
-    ["Mythic Egg"] = { ["Grey Mouse"] = 37.5, ["Brown Mouse"] = 26.79, Squirrel = 26.79, ["Red Giant Ant"] = 8.93, ["Red Fox"] = 0.01 },
-    ["Bug Egg"] = { Snail = 40, ["Giant Ant"] = 35, Caterpillar = 25, ["Praying Mantis"] = 0, ["Dragon Fly"] = 0.01 },
-    ["Night Egg"] = { Hedgehog = 47, Mole = 23.5, Frog = 21.16, ["Echo Frog"] = 8.35, ["Night Owl"] = 0.01, Raccoon = 0.01 },
-    ["Bee Egg"] = { Bee = 65, ["Honey Bee"] = 20, ["Bear Bee"] = 10, ["Petal Bee"] = 5, ["Queen Bee"] = 0.01 },
-    ["Anti Bee Egg"] = { Wasp = 55, ["Tarantula Hawk"] = 31, Moth = 14, Butterfly = 0, ["Disco Bee"] = 0.01 },
-    ["Common Summer Egg"] = { Starfish = 50, Seafull = 25, Crab = 25 },
-    ["Rare Summer Egg"] = { Flamingo = 30, Toucan = 25, ["Sea Turtle"] = 20, Orangutan = 15, Seal = 10 },
-    ["Paradise Egg"] = { Ostrich = 43, Peacock = 33, Capybara = 24, ["Scarlet Macaw"] = 3, ["Mimic Octopus"] = 1 },
-    ["Premium Night Egg"] = { Hedgehog = 50, Mole = 26, Frog = 14, ["Echo Frog"] = 10 },
-    ["Primal Egg"] = { Parasaurolophus = 35, Iguanodon = 32.5, Pachycephalosaurus = 28, Dilophosaurus = 3, Ankylosaurus = 1, Spinosaurus = 0.5 },
-    ["Dinosaur Egg"] = { ["T-Rex"] = 0.01, Brontosaurus = 45, Triceratops = 25, Velociraptor = 30 },
+    ["Common Egg"] = { Dog=33, Bunny=33, ["Golden Lab"]=33 },
+    ["Uncommon Egg"] = { ["Black Bunny"]=25, Chicken=25, Cat=25, Deer=25 },
+    ["Rare Egg"] = { ["Orange Tabby"]=33.33, ["Spotted Deer"]=25, Pig=16.67, Rooster=16.67, Monkey=8.33 },
+    ["Legendary Egg"] = { Cow=42.55, ["Silver Monkey"]=42.55, ["Sea Otter"]=10.64, Turtle=2.13, ["Polar Bear"]=2.13 },
+    ["Mythic Egg"] = { ["Grey Mouse"]=37.5, ["Brown Mouse"]=26.79, Squirrel=26.79, ["Red Giant Ant"]=8.93, ["Red Fox"]=0.01 },
+    ["Bug Egg"] = { Snail=40, ["Giant Ant"]=35, Caterpillar=25, ["Praying Mantis"]=0, ["Dragon Fly"]=0.01 },
+    ["Night Egg"] = { Hedgehog=47, Mole=23.5, Frog=21.16, ["Echo Frog"]=8.35, ["Night Owl"]=0.01, Raccoon=0.01 },
+    ["Bee Egg"] = { Bee=65, ["Honey Bee"]=20, ["Bear Bee"]=10, ["Petal Bee"]=5, ["Queen Bee"]=0.01 },
+    ["Anti Bee Egg"] = { Wasp=55, ["Tarantula Hawk"]=31, Moth=14, Butterfly=0, ["Disco Bee"]=0.01 },
+    ["Common Summer Egg"] = { Starfish=50, Seafull=25, Crab=25 },
+    ["Rare Summer Egg"] = { Flamingo=30, Toucan=25, ["Sea Turtle"]=20, Orangutan=15, Seal=10 },
+    ["Paradise Egg"] = { Ostrich=43, Peacock=33, Capybara=24, ["Scarlet Macaw"]=3, ["Mimic Octopus"]=1 },
+    ["Premium Night Egg"] = { Hedgehog=50, Mole=26, Frog=14, ["Echo Frog"]=10 },
+    ["Primal Egg"] = { Parasaurolophus=35, Iguanodon=32.5, Pachycephalosaurus=28, Dilophosaurus=3, Ankylosaurus=1, Spinosaurus=0.5 },
+    ["Dinosaur Egg"] = { ["T-Rex"]=0.01, Brontosaurus=45, Triceratops=25, Velociraptor=30 }
 }
 
-local function isDivinePet(eggName, petName)
-    local chances = eggChances[eggName]
-    return chances and chances[petName] and chances[petName] <= 0.01
+-- Real ESP Types (show name directly without random pet guess)
+local realESP = {
+    ["Common Egg"] = true,
+    ["Uncommon Egg"] = true,
+    ["Rare Egg"] = true,
+    ["Common Summer Egg"] = true,
+    ["Rare Summer Egg"] = true
+}
+
+-- Track displayed ESPs
+local displayedEggs = {}
+local autoRandomizerOn = false
+
+-- Weighted Random Pet Selection
+local function weightedRandom(opts)
+    local v, t = {}, 0
+    for pet, ch in pairs(opts) do
+        if ch > 0 then
+            table.insert(v, { pet = pet, ch = ch })
+            t += ch
+        end
+    end
+    if #v == 0 then return nil end
+    local r = math.random() * t
+    local cum = 0
+    for _, x in ipairs(v) do
+        cum += x.ch
+        if r <= cum then return x.pet end
+    end
+    return v[1].pet
 end
 
--- GUI SETUP
-local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
-gui.Name = "KuniEggGui"
-gui.ResetOnSpawn = false
-
--- LOADING SCREEN
-local loading = Instance.new("TextLabel", gui)
-loading.Size = UDim2.new(1, 0, 1, 0)
-loading.BackgroundColor3 = Color3.new(0, 0, 0)
-loading.Text = "Kuni Hub"
-loading.TextColor3 = Color3.new(1, 1, 1)
-loading.Font = FONT
-loading.TextScaled = true
-loading.BackgroundTransparency = 0
-
-wait(4)
-loading:Destroy()
-
--- ESP STORAGE
-local displayedEggs = {}
-
-local function weightedRandom(tbl)
-    local total = 0
-    for _, chance in pairs(tbl) do
-        total += chance
-    end
-    local rand = math.random() * total
-    local cumulative = 0
-    for pet, chance in pairs(tbl) do
-        cumulative += chance
-        if rand <= cumulative then
+-- Prevent same pet repeatedly
+local function getNonRepeatingRandomPet(name, last)
+    local pool = eggChances[name]
+    if not pool then return nil end
+    for i = 1, 5 do
+        local pet = weightedRandom(pool)
+        if pet ~= last or math.random() < 0.3 then
             return pet
         end
     end
+    return weightedRandom(pool)
 end
 
-local function createESP(egg, petName, eggName)
-    local gui = Instance.new("BillboardGui")
-    gui.Name = "EggESP"
-    gui.Adornee = egg:FindFirstChildWhichIsA("BasePart") or egg.PrimaryPart or egg
-    gui.Size = UDim2.new(0, 200, 0, 50)
-    gui.StudsOffset = Vector3.new(0, 2.5, 0)
-    gui.AlwaysOnTop = true
+-- ESP GUI
+local function createEspGui(obj, txt)
+    local bg = Instance.new("BillboardGui")
+    bg.Name = "FakePetESP"
+    bg.Adornee = obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart or obj
+    bg.Size = UDim2.new(0, 200, 0, 50)
+    bg.StudsOffset = Vector3.new(0, 2.5, 0)
+    bg.AlwaysOnTop = true
 
-    local label = Instance.new("TextLabel", gui)
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = eggName .. " | ???"
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextStrokeTransparency = 0
-    label.Font = Enum.Font.SourceSansBold
-    label.TextScaled = true
+    local lbl = Instance.new("TextLabel", bg)
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3 = Color3.new(1, 1, 1)
+    lbl.TextStrokeTransparency = 0
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.Text = txt
+    bg.Parent = obj
+    return bg
+end
 
-    gui.Parent = egg
+-- Add ESP to an egg
+local function addESP(egg)
+    if egg:GetAttribute("OWNER") ~= localPlayer.Name then return end
+    local n = egg:GetAttribute("EggName")
+    local id = egg:GetAttribute("OBJECT_UUID")
+    if not n or not id or displayedEggs[id] then return end
 
-    task.delay(39, function()
-        local divine = isDivinePet(eggName, petName)
-        label.Text = eggName .. " | " .. petName
-        if divine then
-            label.TextColor3 = Color3.fromRGB(0, 255, 0)
-            while label and label.Parent do
-                TweenService:Create(label, TweenInfo.new(0.5), { TextTransparency = 1 }):Play()
-                wait(0.5)
-                TweenService:Create(label, TweenInfo.new(0.5), { TextTransparency = 0 }):Play()
-                wait(0.5)
+    local txt = realESP[n] and n or n .. " | " .. (getNonRepeatingRandomPet(n, nil) or "?")
+    local gui = createEspGui(egg, txt)
+
+    displayedEggs[id] = {
+        egg = egg,
+        gui = gui,
+        label = gui:FindFirstChildWhichIsA("TextLabel"),
+        eggName = n,
+        lastPet = nil
+    }
+end
+
+-- Remove ESP
+local function removeESP(egg)
+    local id = egg:GetAttribute("OBJECT_UUID")
+    if id and displayedEggs[id] then
+        displayedEggs[id].gui:Destroy()
+        displayedEggs[id] = nil
+    end
+end
+
+-- Register ESP hooks
+for _, e in collectionService:GetTagged("PetEggServer") do
+    addESP(e)
+end
+collectionService:GetInstanceAddedSignal("PetEggServer"):Connect(addESP)
+collectionService:GetInstanceRemovedSignal("PetEggServer"):Connect(removeESP)
+
+-- Create main GUI
+local gui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+gui.Name = "EggRandomizerGUI"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 280, 0, 180)
+main.Position = UDim2.new(0.5, -140, 0.5, -90)
+main.BackgroundColor3 = BROWN_BG
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+Instance.new("UIStroke", main).Color = BROWN_BORDER
+
+-- Title bar
+local top = Instance.new("Frame", main)
+top.Size = UDim2.new(1, 0, 0, 28)
+top.BackgroundColor3 = ACCENT_GREEN
+Instance.new("UICorner", top).CornerRadius = UDim.new(0, 10)
+
+local title = Instance.new("TextLabel", top)
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Egg Randomizer v2 by Kuni"
+title.Font = FONT
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextScaled = true
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Close button
+local close = Instance.new("TextButton", top)
+close.Size = UDim2.new(0, 24, 0, 24)
+close.Position = UDim2.new(1, -28, 0.5, -12)
+close.BackgroundColor3 = BUTTON_RED
+close.Text = "X"
+close.Font = FONT
+close.TextColor3 = Color3.new(1, 1, 1)
+close.TextScaled = true
+close.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+-- Content holder
+local content = Instance.new("Frame", main)
+content.Position = UDim2.new(0, 10, 0, 40)
+content.Size = UDim2.new(1, -20, 1, -50)
+content.BackgroundTransparency = 1
+
+-- Footer
+local footer = Instance.new("TextLabel", main)
+footer.Size = UDim2.new(1, -10, 0, 16)
+footer.Position = UDim2.new(0, 5, 1, -18)
+footer.BackgroundTransparency = 1
+footer.Text = "Made by Kuni"
+footer.Font = FONT
+footer.TextColor3 = Color3.new(1, 1, 1)
+footer.TextScaled = true
+
+-- Button Template
+local function makeButton(txt, yOffset, color, hoverColor, callback)
+	local btn = Instance.new("TextButton", content)
+	btn.Size = UDim2.new(1, 0, 0, 30)
+	btn.Position = UDim2.new(0, 0, 0, yOffset)
+	btn.BackgroundColor3 = color
+	btn.Text = txt
+	btn.Font = FONT
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.TextScaled = true
+	btn.TextStrokeTransparency = 0.2
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", btn).Color = BROWN_BORDER
+
+	btn.MouseEnter:Connect(function() btn.BackgroundColor3 = hoverColor end)
+	btn.MouseLeave:Connect(function() btn.BackgroundColor3 = color end)
+	btn.MouseButton1Click:Connect(callback)
+
+	return btn
+end
+
+-- 🔁 Auto Randomizer Button Logic
+local isRandomizing = false
+local function getRarestPet(eggName)
+	local list = eggChances[eggName]
+	if not list then return nil end
+	local minChance, rarestPet = 1e9, nil
+	for pet, chance in pairs(list) do
+		if chance > 0 and chance < minChance then
+			minChance = chance
+			rarestPet = pet
+		end
+	end
+	return rarestPet
+end
+
+makeButton("[R] Auto Randomizer", 0, BUTTON_GREEN, BUTTON_GREEN_HOVER, function()
+	if isRandomizing then return end
+	isRandomizing = true
+
+	for _, data in pairs(displayedEggs) do
+		local label = data.label
+		local eggName = data.eggName
+		local guiRef = data.gui
+
+		local startTime = tick()
+
+		coroutine.wrap(function()
+			while tick() - startTime < 40 do
+				if label then
+					local pet = getNonRepeatingRandomPet(eggName, data.lastPet)
+					label.Text = eggName .. " | " .. (pet or "?")
+					data.lastPet = pet
+				end
+				wait(0.25)
+			end
+			if label then
+				local rarest = getRarestPet(eggName)
+				label.Text = eggName .. " | 🎯 " .. (rarest or "???")
+			end
+		end)()
+	end
+
+	isRandomizing = false
+end)
+
+-- PART 4: Auto Randomizer Logic local autoRunning = false
+
+local function getLowestChancePet(eggName) local pool = eggChances[eggName] if not pool then return nil end local lowestPet, lowestChance = nil, math.huge for pet, chance in pairs(pool) do if chance > 0 and chance < lowestChance then lowestChance = chance lowestPet = pet end end return lowestPet or weightedRandom(pool) end
+
+local function animatePets(egg, label, eggName) if not egg or not label then return end local startTime = tick() local updateInterval = 0.2 local thread
+
+thread = task.spawn(function()
+    while autoRunning and tick() - startTime < 40 do
+        local pet = getNonRepeatingRandomPet(eggName, label.Text)
+        if pet then
+            label.Text = eggName .. " | " .. pet
+        end
+        task.wait(updateInterval)
+    end
+
+    if autoRunning then
+        local rarest = getLowestChancePet(eggName)
+        if rarest then
+            label.Text = eggName .. " | " .. rarest .. " (Divine)"
+            label.TextColor3 = Color3.fromRGB(255, 215, 0)
+            label.TextStrokeTransparency = 0
+        end
+    end
+end)
+
+end
+
+local autoBtn = makeBtn("[R] Auto Randomizer",64,BUTTON_GREEN,BUTTON_GREEN_HOVER) autoBtn.MouseButton1Click:Connect(function() if autoRunning then return end autoRunning = true for _, data in pairs(displayedEggs) do animatePets(data.egg, data.label, data.eggName) end task.delay(40, function() autoRunning = false end) end)
+
+-- Egg Randomizer Gui - Part 5
+
+local function getRarestPet(name) local pool = eggChances[name] if not pool then return nil end local rarestPet, lowestChance = nil, math.huge for pet, chance in pairs(pool) do if chance > 0 and chance < lowestChance then lowestChance = chance rarestPet = pet end end return rarestPet or "?" end
+
+local function startAutoRandomizer() local startTime = os.clock() local tickConnection
+
+tickConnection = game:GetService("RunService").RenderStepped:Connect(function()
+    local elapsed = os.clock() - startTime
+    for _, data in pairs(displayedEggs) do
+        if data and data.egg and data.label and data.eggName then
+            if elapsed < 39 then
+                local pet = getNonRepeatingRandomPet(data.eggName, data.lastPet)
+                data.label.Text = data.eggName .. " | " .. (pet or "?")
+                data.lastPet = pet
+            elseif elapsed >= 40 then
+                local rarest = getRarestPet(data.eggName)
+                data.label.Text = data.eggName .. " | " .. rarest
+                data.label.TextColor3 = Color3.new(1, 1, 0) -- yellow highlight
+                data.label.TextStrokeTransparency = 0.5
             end
         end
-    end)
+    end
+
+    if elapsed >= 40 then
+        tickConnection:Disconnect()
+    end
+end)
+
 end
 
-local function onEggAdded(egg)
-    if egg:GetAttribute("OWNER") ~= localPlayer.Name then return end
-    local eggName = egg:GetAttribute("EggName")
-    local id = egg:GetAttribute("OBJECT_UUID")
-    if not eggName or not id or displayedEggs[id] then return end
+local randomBtn = makeBtn("[R] Auto Randomizer",64,BUTTON_GREEN,BUTTON_GREEN_HOVER) randomBtn.MouseButton1Click:Connect(function() startAutoRandomizer() end)
 
-    local pet = weightedRandom(eggChances[eggName] or {})
-    createESP(egg, pet, eggName)
-    displayedEggs[id] = true
-end
-
-for _, egg in ipairs(CollectionService:GetTagged("PetEggServer")) do
-    onEggAdded(egg)
-end
-CollectionService:GetInstanceAddedSignal("PetEggServer"):Connect(onEggAdded)
